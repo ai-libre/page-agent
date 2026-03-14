@@ -1,0 +1,47 @@
+{
+    "name": "@page-agent/connector",
+    "private": false,
+    "version": "1.5.7",
+    "type": "module",
+    "main": "./dist/esm/connector.js",
+    "module": "./dist/esm/connector.js",
+    "types": "./dist/esm/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/esm/index.d.ts",
+            "import": "./dist/esm/connector.js",
+            "default": "./dist/esm/connector.js"
+        }
+    },
+    "files": [
+        "dist/"
+    ],
+    "description": "Universal headless connector for page-agent - drive any web app via CDP with AI",
+    "keywords": [
+        "page-agent",
+        "headless",
+        "cdp",
+        "browser-automation",
+        "universal-connector",
+        "lightpanda"
+    ],
+    "author": "Simon<gaomeng1900>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/alibaba/page-agent.git",
+        "directory": "packages/connector"
+    },
+    "homepage": "https://alibaba.github.io/page-agent/",
+    "scripts": {
+        "build": "vite build",
+        "prepublishOnly": "node -e \"const fs=require('fs');['LICENSE'].forEach(f=>fs.copyFileSync('../../'+f,f))\"",
+        "postpublish": "node -e \"['LICENSE'].forEach(f=>{try{require('fs').unlinkSync(f)}catch{}})\""
+    },
+    "devDependencies": {
+        "@types/node": "^25.4.0"
+    },
+    "engines": {
+        "node": "^20.19.0 || ^22.13.0 || >=24"
+    }
+}
