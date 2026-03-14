@@ -27,25 +27,57 @@ export class CdpClient extends EventEmitter {
 	}
 
 	/**
-	 * Connect to the CDP endpoint.
-	 * Discovers the debugger WebSocket URL via the /json/version HTTP endpoint,
-	 * then opens a WebSocket connection.
+	 * Connect to a CDP page target.
+	 * Discovers available page targets via /json HTTP endpoint, picks the first one,
+	 * and connects to its WebSocket debugger URL.
+	 * If no page target exists, creates one via /json/new.
 	 */
 	async connect(): Promise<void> {
 		// Derive HTTP URL from ws:// URL for discovery
 		const httpBase = this.wsUrl.replace(/^ws:\/\//, 'http://').replace(/\/$/, '')
 
-		// Try to get the debugger WebSocket URL
+		// Find or create a page target
 		let wsEndpoint: string
 		try {
-			const resp = await fetch(`${httpBase}/json/version`)
-			const data = (await resp.json()) as { webSocketDebuggerUrl?: string }
-			wsEndpoint = data.webSocketDebuggerUrl || this.wsUrl
+			// List available targets
+			const listResp = await fetch(`${httpBase}/json/list`)
+			const targets = (await listResp.json()) as {
+				type: string
+				webSocketDebuggerUrl?: string
+			}[]
+
+			// Find a page target
+			const pageTarget = targets.find((t) => t.type === 'page')
+
+			if (pageTarget?.webSocketDebuggerUrl) {
+				wsEndpoint = pageTarget.webSocketDebuggerUrl
+			} else {
+				// Create a new page target
+				try {
+					const newResp = await fetch(`${httpBase}/json/new?about:blank`)
+					const newTarget = (await newResp.json()) as { webSocketDebuggerUrl?: string }
+					wsEndpoint = newTarget.webSocketDebuggerUrl || this.wsUrl
+				} catch {
+					// Fall back to browser-level endpoint
+					const versionResp = await fetch(`${httpBase}/json/version`)
+					const versionData = (await versionResp.json()) as {
+						webSocketDebuggerUrl?: string
+					}
+					wsEndpoint = versionData.webSocketDebuggerUrl || this.wsUrl
+				}
+			}
 		} catch {
-			// If discovery fails, try direct connection
+			// If all discovery fails, try direct connection
 			wsEndpoint = this.wsUrl
 		}
 
+		return this.connectToWebSocket(wsEndpoint)
+	}
+
+	/**
+	 * Connect directly to a specific WebSocket URL.
+	 */
+	private connectToWebSocket(wsEndpoint: string): Promise<void> {
 		return new Promise<void>((resolve, reject) => {
 			this.ws = new WebSocket(wsEndpoint)
 

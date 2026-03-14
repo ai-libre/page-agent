@@ -119,8 +119,9 @@ export class RemotePageController extends EventEmitter {
 
 	async getBrowserState(): Promise<BrowserState> {
 		await this.ensureInjected()
+		this.lastUpdateTime = Date.now()
 		const result = await this.evaluateAsync(
-			'JSON.stringify(await window.__pageAgent.getBrowserState())'
+			'(async () => JSON.stringify(await window.__pageAgent.getBrowserState()))()'
 		)
 		return JSON.parse(result as string)
 	}
@@ -128,7 +129,9 @@ export class RemotePageController extends EventEmitter {
 	async updateTree(): Promise<string> {
 		await this.ensureInjected()
 		this.lastUpdateTime = Date.now()
-		const result = await this.evaluateAsync('JSON.stringify(await window.__pageAgent.updateTree())')
+		const result = await this.evaluateAsync(
+			'(async () => JSON.stringify(await window.__pageAgent.updateTree()))()'
+		)
 		return JSON.parse(result as string)
 	}
 
@@ -139,7 +142,7 @@ export class RemotePageController extends EventEmitter {
 	async clickElement(index: number): Promise<ActionResult> {
 		await this.ensureInjected()
 		const result = await this.evaluateAsync(
-			`JSON.stringify(await window.__pageAgent.clickElement(${index}))`
+			`(async () => JSON.stringify(await window.__pageAgent.clickElement(${index})))()`
 		)
 		return JSON.parse(result as string)
 	}
@@ -148,7 +151,7 @@ export class RemotePageController extends EventEmitter {
 		await this.ensureInjected()
 		const escaped = JSON.stringify(text)
 		const result = await this.evaluateAsync(
-			`JSON.stringify(await window.__pageAgent.inputText(${index}, ${escaped}))`
+			`(async () => JSON.stringify(await window.__pageAgent.inputText(${index}, ${escaped})))()`
 		)
 		return JSON.parse(result as string)
 	}
@@ -157,7 +160,7 @@ export class RemotePageController extends EventEmitter {
 		await this.ensureInjected()
 		const escaped = JSON.stringify(optionText)
 		const result = await this.evaluateAsync(
-			`JSON.stringify(await window.__pageAgent.selectOption(${index}, ${escaped}))`
+			`(async () => JSON.stringify(await window.__pageAgent.selectOption(${index}, ${escaped})))()`
 		)
 		return JSON.parse(result as string)
 	}
@@ -170,7 +173,7 @@ export class RemotePageController extends EventEmitter {
 	}): Promise<ActionResult> {
 		await this.ensureInjected()
 		const result = await this.evaluateAsync(
-			`JSON.stringify(await window.__pageAgent.scroll(${JSON.stringify(options)}))`
+			`(async () => JSON.stringify(await window.__pageAgent.scroll(${JSON.stringify(options)})))()`
 		)
 		return JSON.parse(result as string)
 	}
@@ -182,7 +185,7 @@ export class RemotePageController extends EventEmitter {
 	}): Promise<ActionResult> {
 		await this.ensureInjected()
 		const result = await this.evaluateAsync(
-			`JSON.stringify(await window.__pageAgent.scrollHorizontally(${JSON.stringify(options)}))`
+			`(async () => JSON.stringify(await window.__pageAgent.scrollHorizontally(${JSON.stringify(options)})))()`
 		)
 		return JSON.parse(result as string)
 	}
@@ -191,7 +194,7 @@ export class RemotePageController extends EventEmitter {
 		await this.ensureInjected()
 		const escaped = JSON.stringify(script)
 		const result = await this.evaluateAsync(
-			`JSON.stringify(await window.__pageAgent.executeJavascript(${escaped}))`
+			`(async () => JSON.stringify(await window.__pageAgent.executeJavascript(${escaped})))()`
 		)
 		return JSON.parse(result as string)
 	}
@@ -239,7 +242,11 @@ export class RemotePageController extends EventEmitter {
 			returnByValue: true,
 		})
 		if (result?.exceptionDetails) {
-			throw new Error(`JS evaluation error: ${result.exceptionDetails.text}`)
+			const desc =
+				result.exceptionDetails.exception?.description ||
+				result.exceptionDetails.text ||
+				JSON.stringify(result.exceptionDetails)
+			throw new Error(`JS evaluation error: ${desc}`)
 		}
 		return result?.result?.value
 	}
@@ -254,7 +261,11 @@ export class RemotePageController extends EventEmitter {
 			awaitPromise: true,
 		})
 		if (result?.exceptionDetails) {
-			throw new Error(`JS evaluation error: ${result.exceptionDetails.text}`)
+			const desc =
+				result.exceptionDetails.exception?.description ||
+				result.exceptionDetails.text ||
+				JSON.stringify(result.exceptionDetails)
+			throw new Error(`JS evaluation error: ${desc}`)
 		}
 		return result?.result?.value
 	}
