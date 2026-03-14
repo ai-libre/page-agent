@@ -33,6 +33,9 @@ dist-ssr
 .output
 .wxt
 
+# Reference repos
+refs/
+
 # AI
 .agent
 .claude
